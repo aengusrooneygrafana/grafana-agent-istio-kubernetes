@@ -3,16 +3,116 @@
 #### Create k8s cluster  (shift option r to run)
 
 export THEDATE=`date +%y%m%d%H`
-gcloud container clusters create se-rooney-$THEDATE --num-nodes 3 
+
+gcloud services enable container.googleapis.com 
+
+gcloud container clusters create se-rooney-$THEDATE \
+--cluster-version latest \
+--machine-type=n1-standard-2 \
+--num-nodes 3 \
+--enable-network-policy
+
+#### Check current k8s context 
+
 kubectl config current-context
 
-#### Create a new org or stack on Grafana.com 
+#### Install Istio service mesh 
+
+mkdir istio && cd istio 
+wget https://istio.io/downloadIstio 
+chmod a+x downloadIstio 
+./downloadIstio
+cd istio-* 
+export PATH=$PWD/bin:$PATH
+
+# Begin the Istio pre-installation check by running:
+
+istioctl x precheck 
+
+# Install demo profile https://istio.io/latest/docs/setup/additional-setup/config-profiles/
+
+istioctl install --set profile=demo -y  
+
+# Add a namespace label to instruct Istio to automatically inject Envoy sidecar proxies when deploying apps 
+
+kubectl label namespace default istio-injection=enabled 
+
+# Deploy the Bookinfo sample application 
+
+kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml 
+
+# The application will start. As each pod becomes ready, the Istio sidecar will be deployed along with it. 
+
+kubectl cluster-info 
+kubectl get namespace
+kubectl get services  
+kubectl get pods  
+
+# Run this command to verify the app is running inside the cluster and serving HTML pages  
+
+kubectl exec "$(kubectl get pod -l app=ratings -o jsonpath='{.items[0].metadata.name}')" -c ratings -- curl -sS productpage:9080/productpage | grep -o "<title>.*</title>"
+
+# Open the application to outside traffic 
+
+# Associate the application with the Istio gateway: 
+
+kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml  
+
+# Ensure that there are no issues with the configuration:
+
+istioctl analyze
+
+# Open the application to outside traffic 
+
+# determine if your k8s cluster is running in an environment that supports external load balancers: 
+
+kubectl get svc istio-ingressgateway -n istio-system
+
+# Set the ingress IP and ports: 
+
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}') ; 
+export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}') ; 
+export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}') ; 
+
+# Set GATEWAY_URL: 
+
+export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT ; 
+echo "$GATEWAY_URL"
+
+# Run the following command to retrieve the external address of the Bookinfo application, and Go!  
+
+echo "http://$GATEWAY_URL/productpage"  
+
+# Generate some activity / traces (check sampling rate 1% or 100% ??) 
+
+for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"; done
+
+# deploy addons, Kiali, Prometheus, Grafana, and Jaeger on the k8s cluster. 
+# (If there are errors trying to install the addons, try running the command again.)
+
+kubectl apply -f samples/addons
+kubectl rollout status deployment/kiali -n istio-system 
+
+nohup istioctl dashboard prometheus & 
+nohup istioctl dashboard jaeger & 
+nohup istioctl dashboard grafana & 
+nohup istioctl dashboard kiali & 
+# In the left navigation menu, select Graph and in the Namespace drop down, select default.
+# The Kiali dashboard shows an overview of your mesh with relationships between services in the app 
+
+#### Generate some activity / traces (check sampling rate 1% or 100% ??) 
+
+for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"; done 
+
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### Create a new Org (Account) or Stack (Tenant) on Grafana.com 
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 
 open -g -a "Google Chrome" https://grafana.com/orgs/aengusrooneytest 
 
 #### SOURCE THE GRAFANA.COM ENVIRONMENT VARIABLES (env file with your grafana.com credentials)
 
-source /Users/aengusrooney/grafana-dot-com-env/set_env.sh
+source ~/grafana-dot-com-env/set_env.sh
 
 #### CHECK ENVIRONMENT VARIABLES HAVE BEEN SOURCED 
 
@@ -35,6 +135,10 @@ kubectl rollout restart ds/grafana-agent-logs
 envsubst < agent-traces.yaml | kubectl apply -n default -f -
 envsubst < agent-traces-configmap.yaml | kubectl apply -n default -f -
 kubectl rollout restart deployment/grafana-agent-traces
+
+#### Cleanup Istio dir 
+
+rm -rf istio 
 
 #### CHECK PODS RUNNING OK 
 
