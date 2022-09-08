@@ -2,7 +2,8 @@
 
 #### Create k8s cluster  (shift option r to run)
 
-export THEDATE=`date +%y%m%d%H`
+export THEDATE=`date +%y%m%d%H%M`
+echo $THEDATE
 
 gcloud services enable container.googleapis.com 
 
@@ -35,6 +36,7 @@ istioctl install --set profile=demo -y
 
 # Add a namespace label to instruct Istio to automatically inject Envoy sidecar proxies when deploying apps 
 
+kubectl get namespace 
 kubectl label namespace default istio-injection=enabled 
 
 # Deploy the Bookinfo sample application 
@@ -118,11 +120,15 @@ source ~/grafana-dot-com-env/set_env.sh
 
 env | grep -e YOUR_REMOTE_WRITE_USERNAME 
 
+#### Change back into the package root folder 
+
+cd ../..
+
 #### APPLY THE METRICS AGENT AND CONFIG 
 
 envsubst < agent-metrics.yaml | kubectl apply -n default -f - 
 envsubst < agent-metrics-configmap.yaml | kubectl apply -n default -f -
-kubectl rollout restart deployment/grafana-agent
+kubectl rollout restart statefulset/grafana-agent
 
 #### APPLY THE LOGS AGENT AND CONFIG 
 
