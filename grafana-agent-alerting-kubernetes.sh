@@ -54,9 +54,7 @@ kubectl get pods
 
 kubectl exec "$(kubectl get pod -l app=ratings -o jsonpath='{.items[0].metadata.name}')" -c ratings -- curl -sS productpage:9080/productpage | grep -o "<title>.*</title>"
 
-# Open the application to outside traffic 
-
-# Associate the application with the Istio gateway: 
+# Open the application to outside traffic / Associate the application with the Istio gateway: 
 
 kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml  
 
