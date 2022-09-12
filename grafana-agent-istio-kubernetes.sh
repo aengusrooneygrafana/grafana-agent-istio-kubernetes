@@ -93,9 +93,9 @@ for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"
 kubectl apply -f samples/addons
 kubectl rollout status deployment/kiali -n istio-system 
 
+nohup istioctl dashboard grafana & 
 nohup istioctl dashboard prometheus & 
 nohup istioctl dashboard jaeger & 
-nohup istioctl dashboard grafana & 
 nohup istioctl dashboard kiali & 
 # In the left navigation menu, select Graph and in the Namespace drop down, select default.
 # The Kiali dashboard shows an overview of your mesh with relationships between services in the app 
