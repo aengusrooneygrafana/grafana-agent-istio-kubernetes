@@ -31,17 +31,19 @@ export PATH=$PWD/bin:$PATH
 istioctl x precheck 
 
 # Install demo profile https://istio.io/latest/docs/setup/additional-setup/config-profiles/
+# Set sampling rate to 100% (as we can - Tempo implements a low cost object store back end) 
+# Update the tracing service address to be the Grafana Agent's address 
 
 istioctl install --set profile=demo -y  
+istioctl apply --set meshConfig.defaultConfig.tracing.sampling=100
+istioctl apply --set meshConfig.defaultConfig.tracing.zipkin.address=grafana-agent-traces.default.svc.cluster.local:9411
 
 # Add a namespace label to instruct Istio to automatically inject Envoy sidecar proxies when deploying apps 
+# Then deploy the Bookinfo sample application 
 
 kubectl get namespace 
 kubectl label namespace default istio-injection=enabled 
 kubectl label namespace istio-system istio-injection=enabled 
-
-# Deploy the Bookinfo sample application 
-
 kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml 
 
 # The application will start. As each pod becomes ready, the Istio sidecar will be deployed along with it. 
@@ -52,40 +54,31 @@ kubectl get services
 kubectl get pods  
 
 # Run this command to verify the app is running inside the cluster and serving HTML pages  
+# Then open the application to outside traffic / Associate the application with the Istio gateway: 
 
 kubectl exec "$(kubectl get pod -l app=ratings -o jsonpath='{.items[0].metadata.name}')" -c ratings -- curl -sS productpage:9080/productpage | grep -o "<title>.*</title>"
-
-# Open the application to outside traffic / Associate the application with the Istio gateway: 
-
 kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml  
 
 # Ensure that there are no issues with the configuration:
 
 istioctl analyze
 
-# Open the application to outside traffic 
-
-# determine if your k8s cluster is running in an environment that supports external load balancers: 
+# Determine if your k8s cluster is running in an environment that supports external load balancers: 
 
 kubectl get svc istio-ingressgateway -n istio-system
 
-# Set the ingress IP and ports: 
+# If so, then open the application to outside traffic by setting the ingress IP and ports: 
 
 export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}') ; 
 export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}') ; 
 export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}') ; 
 
-# Set GATEWAY_URL: 
-
+# Set the GATEWAY_URL 
+# Then echo to retrieve the external address of the Bookinfo application, and go to that address!  
+# Generate some activity / traces  
 export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT ; 
 echo "$GATEWAY_URL"
-
-# Run the following command to retrieve the external address of the Bookinfo application, and Go!  
-
 echo "http://$GATEWAY_URL/productpage"  
-
-# Generate some activity / traces (check sampling rate 1% or 100% ??) 
-
 for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"; done
 
 # deploy addons, Kiali, Prometheus, Grafana, and Jaeger on the k8s cluster. 
@@ -106,26 +99,22 @@ nohup istioctl dashboard kiali &
 for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"; done 
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
-#### Create a new Org (Account) or Stack (Tenant) on Grafana.com 
+#### Grafana.com Create a new Org (Account) or Stack (Tenant)  
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 
 open -g -a "Google Chrome" https://grafana.com/orgs/aengusrooneytest 
 
 #### SOURCE THE GRAFANA.COM ENVIRONMENT VARIABLES (env file with your grafana.com credentials)
-
-source ~/grafana-dot-com-env/set_env.sh
-
 #### CHECK ENVIRONMENT VARIABLES HAVE BEEN SOURCED 
 
+source ~/grafana-dot-com-env/set_env.sh
 env | grep -e YOUR_REMOTE_WRITE_USERNAME 
 
 #### Change back into the package root folder 
+#### APPLY THE METRICS AGENT AND CONFIG 
 
 $PWD
 cd ../..
-$PWD
-
-#### APPLY THE METRICS AGENT AND CONFIG 
 
 envsubst < agent-metrics.yaml | kubectl apply -n default -f - 
 envsubst < agent-metrics-configmap.yaml | kubectl apply -n default -f -
@@ -159,7 +148,9 @@ for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"
 
 open -g -a "Google Chrome"  https://aengusrooneytest.grafana.net/explore
 
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 #### Alerting  
+#### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 
 # k8s integration installs a new set of alerts  
 
@@ -170,7 +161,7 @@ open -g -a "Google Chrome" https://aengusrooneytest.grafana.net/a/grafana-easyst
 cortextool rules load k8s_rules.yml --address=$AM_ADDRESS --id=$AM_ID --key=$AM_PASSWORD 
 cortextool rules list --address=$AM_ADDRESS --id=$AM_ID --key=$AM_PASSWORD 
 
-#### Tracing app 
+#### Load a tracing application  
 
 open -g -a "Google Chrome" https://grafana.com/blog/2021/08/31/how-istio-tempo-and-loki-speed-up-debugging-for-microservices/
 
