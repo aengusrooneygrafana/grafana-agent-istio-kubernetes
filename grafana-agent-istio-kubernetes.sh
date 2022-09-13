@@ -38,6 +38,7 @@ istioctl install --set profile=demo -y
 
 kubectl get namespace 
 kubectl label namespace default istio-injection=enabled 
+kubectl label namespace istio-system istio-injection=enabled 
 
 # Deploy the Bookinfo sample application 
 
@@ -45,7 +46,7 @@ kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 
 # The application will start. As each pod becomes ready, the Istio sidecar will be deployed along with it. 
 
-kubectl cluster-info 
+kubectl get all 
 kubectl get namespace
 kubectl get services  
 kubectl get pods  
@@ -120,7 +121,9 @@ env | grep -e YOUR_REMOTE_WRITE_USERNAME
 
 #### Change back into the package root folder 
 
+$PWD
 cd ../..
+$PWD
 
 #### APPLY THE METRICS AGENT AND CONFIG 
 
@@ -148,7 +151,11 @@ rm -rf istio
 
 kc get po -n default 
 
-#### BROWSE METRIECS AND LOGS 
+#### GENERATE SOME MORE TRACES 
+
+for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"; done 
+
+#### BROWSE METRIECS LOGS AND TRACES 
 
 open -g -a "Google Chrome"  https://aengusrooneytest.grafana.net/explore
 
