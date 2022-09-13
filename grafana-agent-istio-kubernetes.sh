@@ -35,8 +35,8 @@ istioctl x precheck
 # Update the tracing service address to be the Grafana Agent's address 
 
 istioctl install --set profile=demo -y  
-istioctl apply --set meshConfig.defaultConfig.tracing.sampling=100
-istioctl apply --set meshConfig.defaultConfig.tracing.zipkin.address=grafana-agent-traces.default.svc.cluster.local:9411
+istioctl apply --set meshConfig.defaultConfig.tracing.sampling=100 -y 
+istioctl apply --set meshConfig.defaultConfig.tracing.zipkin.address=grafana-agent-traces.default.svc.cluster.local:9411 -y
 
 # Add a namespace label to instruct Istio to automatically inject Envoy sidecar proxies when deploying apps 
 # Then deploy the Bookinfo sample application 
@@ -75,11 +75,9 @@ export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressga
 
 # Set the GATEWAY_URL 
 # Then echo to retrieve the external address of the Bookinfo application, and go to that address!  
-# Generate some activity / traces  
 export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT ; 
 echo "$GATEWAY_URL"
 echo "http://$GATEWAY_URL/productpage"  
-for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"; done
 
 # deploy addons, Kiali, Prometheus, Grafana, and Jaeger on the k8s cluster. 
 # (If there are errors trying to install the addons, try running the command again.)
@@ -93,10 +91,6 @@ nohup istioctl dashboard jaeger &
 nohup istioctl dashboard kiali & 
 # In the left navigation menu, select Graph and in the Namespace drop down, select default.
 # The Kiali dashboard shows an overview of your mesh with relationships between services in the app 
-
-#### Generate some activity / traces (check sampling rate 1% or 100% ??) 
-
-for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"; done 
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 #### Grafana.com Create a new Org (Account) or Stack (Tenant)  
@@ -139,8 +133,9 @@ rm -rf istio
 #### CHECK PODS RUNNING OK 
 
 kc get po -n default 
+kc get po -n istio-system 
 
-#### GENERATE SOME MORE TRACES 
+# Generate some activity / traces  
 
 for i in $(seq 1 100); do curl -s -o /dev/null "http://$GATEWAY_URL/productpage"; done 
 
