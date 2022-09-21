@@ -79,19 +79,6 @@ export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT ;
 echo "$GATEWAY_URL"
 echo "http://$GATEWAY_URL/productpage"  
 
-# deploy addons, Kiali, Prometheus, Grafana, and Jaeger on the k8s cluster. 
-# (If there are errors trying to install the addons, try running the command again.)
-
-kubectl apply -f samples/addons
-kubectl rollout status deployment/kiali -n istio-system 
-
-nohup istioctl dashboard grafana & 
-nohup istioctl dashboard prometheus & 
-nohup istioctl dashboard jaeger & 
-nohup istioctl dashboard kiali & 
-# In the left navigation menu, select Graph and in the Namespace drop down, select default.
-# The Kiali dashboard shows an overview of your mesh with relationships between services in the app 
-
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 #### Grafana.com Create a new Org (Account) or Stack (Tenant)  
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
@@ -126,8 +113,24 @@ envsubst < agent-traces.yaml | kubectl apply -n default -f -
 envsubst < agent-traces-configmap.yaml | kubectl apply -n default -f -
 kubectl rollout restart deployment/grafana-agent-traces
 
+# [OPTIONAL] Deploy local addons, Kiali, Prometheus, Grafana, and Jaeger on the k8s cluster. 
+# (If there are errors trying to install the addons, try running the command again.)
+
+cd istio/istio-* 
+kubectl apply -f samples/addons
+kubectl rollout status deployment/kiali -n istio-system 
+
+nohup istioctl dashboard grafana & 
+nohup istioctl dashboard prometheus & 
+nohup istioctl dashboard jaeger & 
+nohup istioctl dashboard kiali & 
+# In the left navigation menu, select Graph and in the Namespace drop down, select default.
+# The Kiali dashboard shows an overview of your mesh with relationships between services in the app 
+
 #### Cleanup Istio dir 
 
+$PWD 
+cd ../..
 rm -rf istio 
 
 #### CHECK PODS RUNNING OK 
