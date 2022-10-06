@@ -94,7 +94,7 @@ env | grep -e YOUR_REMOTE_WRITE_USERNAME
 #### Change back into the package root folder 
 #### APPLY THE METRICS AGENT AND CONFIG 
 
-$PWD
+pwd
 cd ../..
 
 envsubst < agent-metrics.yaml | kubectl apply -n default -f - 
@@ -127,9 +127,15 @@ nohup istioctl dashboard kiali &
 # In the left navigation menu, select Graph and in the Namespace drop down, select default.
 # The Kiali dashboard shows an overview of your mesh with relationships between services in the app 
 
+# create a gateway for the local grafana service 
+
+kc apply -f ../../grafana-gateway.yaml -n istio-system
+# Now browse to the Grafana gateway 
+echo "http://$GATEWAY_URL/"  
+
 #### Cleanup Istio dir 
 
-$PWD 
+pwd 
 cd ../..
 rm -rf istio 
 
