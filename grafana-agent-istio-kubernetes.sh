@@ -34,7 +34,7 @@ istioctl x precheck
 # Set sampling rate to 100% (as we can - Tempo implements a low cost object store back end) 
 # Update the tracing service address to be the Grafana Agent's address 
 
-istioctl install --set profile=demo -y  
+istioctl install --set profile=default -y  
 istioctl apply --set meshConfig.defaultConfig.tracing.sampling=100 -y 
 istioctl apply --set meshConfig.defaultConfig.tracing.zipkin.address=grafana-agent-traces.default.svc.cluster.local:9411 -y
 
