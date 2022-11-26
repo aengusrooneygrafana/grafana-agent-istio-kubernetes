@@ -15,8 +15,8 @@ data:
         remote_write:
         - url: https://prometheus-us-central1.grafana.net/api/prom/push
           basic_auth:
-            username: 9826
-            password: eyJrIjoiNTIwNzhiZGNhZWEwYmNkMWUyZGRhMDRmMjE0OWRkNTVjZTBjOWFkZSIsIm4iOiJhZW5ndXNyb29uZXl0ZXN0LWVhc3lzdGFydC1wcm9tLXB1Ymxpc2hlciIsImlkIjoyODM3MzR9
+            username: $YOUR_REMOTE_WRITE_USERNAME
+            password: $YOUR_REMOTE_WRITE_PASSWORD
         scrape_configs:
         - job_name: integrations/jenkins
           metrics_path: /prometheus
@@ -365,8 +365,8 @@ data:
         clients:
         - url: https://logs-prod-us-central1.grafana.net/loki/api/v1/push
           basic_auth:
-            username: 3759
-            password: eyJrIjoiNTIwNzhiZGNhZWEwYmNkMWUyZGRhMDRmMjE0OWRkNTVjZTBjOWFkZSIsIm4iOiJhZW5ndXNyb29uZXl0ZXN0LWVhc3lzdGFydC1wcm9tLXB1Ymxpc2hlciIsImlkIjoyODM3MzR9
+            username: $YOUR_LOKI_USERNAME
+            password: $YOUR_LOKI_PASSWORD
           external_labels:
             cluster: cloud
             job: integrations/kubernetes/eventhandler
